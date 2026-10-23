@@ -1,6 +1,6 @@
 app-id: com.ktechpit.glate
 runtime: org.kde.Platform
-runtime-version: '6.10'
+runtime-version: '6.11'
 sdk: org.kde.Sdk
 command: glate
 finish-args:
@@ -18,33 +18,63 @@ finish-args:
   - --filesystem=xdg-download
   - --filesystem=xdg-music
 
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/man
+  - /share/doc
+
 modules:
-  - shared-modules/squashfs-tools/squashfs-tools.json
-
   - name: glate
-    buildsystem: simple
-    build-commands:
-        - unsquashfs -no-progress *.snap
-        - install -Dm755 squashfs-root/usr/bin/glate ${FLATPAK_DEST}/bin/glate
-        - cp -r squashfs-root/usr/share/icons ${FLATPAK_DEST}/share/
-        - install -Dm644 squashfs-root/usr/share/applications/com.ktechpit.glate.desktop ${FLATPAK_DEST}/share/applications/com.ktechpit.glate.desktop
-        - desktop-file-edit --set-icon=${FLATPAK_ID} ${FLATPAK_DEST}/share/applications/com.ktechpit.glate.desktop
-        - install -Dm644 squashfs-root/usr/share/metainfo/com.ktechpit.glate.metainfo.xml ${FLATPAK_DEST}/share/metainfo/com.ktechpit.glate.metainfo.xml
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DGLATE_BUILD_TESTS=OFF
+      # Mozilla's translation engine for offline mode comes from the archives
+      # below (third_party/translations) instead of a fetch at configure time.
+      - -DGLATE_ENGINE_PREFETCHED=ON
     sources:
-        # =========================
-        # x86_64 (amd64) – stable
-        # =========================
-        - type: file
-          url: https://api.snapcraft.io/api/v1/snaps/download/SXq98IHX3HIOe3I6CuvHbw9jaGOELiLF_55.snap
-          sha256: 58d1103dcf787a60518d0772c97a4b5e59e6eff7cd4a27fd2128927222193d08
-          only-arches:
-            - x86_64
+      - type: git
+        url: https://github.com/keshavbhatt/glate-ng.git
+        tag: v4.5.0
+        commit: dd9580d531bca8d6f24bb1da6847562e1ae86161
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$
 
-        # =========================
-        # arm64 (aarch64) – stable
-        # =========================
-        - type: file
-          url: https://api.snapcraft.io/api/v1/snaps/download/SXq98IHX3HIOe3I6CuvHbw9jaGOELiLF_56.snap
-          sha256: 31ae06e207da63afc84d7cf8c5da5ed3ef69edad71ef5c0b3fc933cc8da448b7
-          only-arches:
-            - aarch64
+      # Mozilla's inference engine at the commit pinned in glate-ng's
+      # cmake/FetchTranslationsEngine.cmake (GLATE_ENGINE_COMMIT), with only the
+      # submodules the build uses. Update all of them together with that pin.
+      - type: archive
+        url: https://github.com/mozilla/translations/archive/69455acaecbe8650cdba988dbcf7c10ca20e7c48.tar.gz
+        sha256: d55b241742191d634622dbaf21d6af50d911bb5bf46fc781a32080f20823f2a4
+        dest: third_party/translations
+      - type: archive
+        url: https://github.com/browsermt/ssplit-cpp/archive/a311f9865ade34db1e8e080e6cc146f55dafb067.tar.gz
+        sha256: 937ded1229ee69f340772056a4ff6daaede5b899f12c4c7b091c40f430c56fd8
+        dest: third_party/translations/inference/3rd_party/ssplit-cpp
+      - type: archive
+        url: https://github.com/browsermt/sentencepiece/archive/ae41b7740d7006596bb9257e83340b2620db9d00.tar.gz
+        sha256: 4d2148ae7e240cd113586004d2cf0102f7ab1bae363b91b2934ee83c5ae3dbbe
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/sentencepiece
+      - type: archive
+        url: https://github.com/kpu/intgemm/archive/f7401513da71758dacce52fed1c7855549abee59.tar.gz
+        sha256: 8e827c445dbb1b117a9667616bac23b3c945e626da0a3466786cfd058ed2f41d
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/intgemm
+      - type: archive
+        url: https://github.com/google/ruy/archive/2d950b3bfa7ebfbe7a97ecb44b1cc4da5ac1d6f0.tar.gz
+        sha256: 6593ec4323ae69e542bde97711d5680069cb802301512063289b1103c5374244
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/ruy
+      - type: archive
+        url: https://github.com/pytorch/cpuinfo/archive/5916273f79a21551890fd3d56fc5375a78d1598d.tar.gz
+        sha256: f3c16d5d393d6d1fa6b6ed8621dd0a535552df9bc88cbba739375dde38a93142
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/ruy/third_party/cpuinfo
+      - type: archive
+        url: https://github.com/browsermt/onnxjs/archive/924924b08e9596b41aeebada4a172f026be95f5a.tar.gz
+        sha256: 3821ba42d187d7011cc860dc1133fb295ac9d97a0a35c5bf08554229fc7b44cd
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/onnxjs
+      - type: archive
+        url: https://github.com/browsermt/simd_utils/archive/d0793d86aea9036a5bc77b9ca7791dff024168ca.tar.gz
+        sha256: 829325e164ee2be5dffed51ccf8cc4b776edbb4269d174e79f6708fd89fca59f
+        dest: third_party/translations/inference/marian-fork/src/3rd_party/simd_utils
