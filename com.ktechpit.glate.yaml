@@ -37,8 +37,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/keshavbhatt/glate-ng.git
-        tag: v4.5.0
-        commit: dd9580d531bca8d6f24bb1da6847562e1ae86161
+        tag: v4.6.0
+        commit: ccb2be2bf24db3de5aacefee8c3787d266c46f6d
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$
